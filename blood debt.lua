@@ -174,4 +174,3 @@ end)
 if not success then
     warn("something fked up: " .. tostring(err))
 end
-Click to switch to the original text.Click to Translate Page.SettingsPDF Translate
