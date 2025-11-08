@@ -3,25 +3,27 @@ local success, err = pcall(function()
     local workspace = game:GetService("Workspace")
     local camera = workspace.CurrentCamera
     local localPlayer = players.LocalPlayer
-    local boxesData, lastGunState = {}, {}
+    local boxesData, lastGunState, lastPrintTime = {}, {}, {}
     local lastGlobalState = false
+    local delayprint = 5
 
     local function createboxes(player)
         if boxesData[player] then return end
         local box = Drawing.new("Square")
         box.Filled = false
         box.Thickness = 1
-        box.Color = Color3.fromRGB(255, 255, 255)
+        box.Color = Color3.fromRGB(255,255,255)
         box.Visible = false
 
         local text = Drawing.new("Text")
-        text.Color = Color3.fromRGB(255, 255, 255)
+        text.Color = Color3.fromRGB(255,255,255)
         text.Center = true
         text.Outline = true
         text.Visible = false
 
-        boxesData[player] = { box = box, text = text, lastGun = nil, fading = false }
+        boxesData[player] = {box = box, text = text, lastGun = nil, fading = false}
         lastGunState[player] = false
+        lastPrintTime[player] = 0
     end
 
     local function removeboxes(player)
@@ -31,6 +33,7 @@ local success, err = pcall(function()
             d.text:Remove()
             boxesData[player] = nil
             lastGunState[player] = nil
+            lastPrintTime[player] = nil
         end
     end
 
@@ -47,6 +50,7 @@ local success, err = pcall(function()
     while true do
         local anyHasGun = false
         local list = players:GetChildren()
+        local now = os.clock()
 
         for _, player in pairs(list) do
             if player == localPlayer then
@@ -82,33 +86,35 @@ local success, err = pcall(function()
                 continue
             end
 
-            local foundGun, gunName = false, nil
-            for _, container in pairs({ player:FindFirstChild("Backpack"), char }) do
+            local foundGun, currentGun = false, nil
+            for _, container in pairs({player:FindFirstChild("Backpack"), char}) do
                 if container then
                     for _, tool in pairs(container:GetChildren()) do
                         if tool:IsA("Tool") then
                             local gunCheck = tool:FindFirstChild("GUNCHECK")
                             if gunCheck and gunCheck:IsA("Script") then
                                 foundGun = true
-                                gunName = tool.Name
+                                currentGun = tool.Name
                                 break
                             end
                         end
                     end
                 end
+                if foundGun then break end
             end
 
             if foundGun then
                 anyHasGun = true
 
-              
-                if not lastGunState[player] then
-                    print(player.Name .. " this boy got a gun xd : " .. gunName)
+                if (not lastGunState[player] or data.lastGun ~= currentGun) and (now - (lastPrintTime[player] or 0) >= delayprint) then
+                    if not lastGunState[player] then
+                        print(player.Name .. " got a gun: " .. currentGun)
+                    else
+                        print(player.Name .. " switched guns to: " .. currentGun)
+                    end
                     lastGunState[player] = true
-                    data.lastGun = gunName
-                elseif data.lastGun ~= gunName then
-                    print(player.Name .. " switched guns to: " .. gunName)
-                    data.lastGun = gunName
+                    data.lastGun = currentGun
+                    lastPrintTime[player] = now
                 end
 
                 local hrp = root
@@ -132,13 +138,16 @@ local success, err = pcall(function()
                 data.box.Position = Vector2.new(x, y)
                 data.box.Visible = true
 
-                data.text.Text = player.Name .. " | " .. gunName
+                data.text.Text = player.Name .. " | " .. currentGun
                 data.text.Position = Vector2.new(tpos.X, bpos.Y + 15)
                 data.text.Visible = true
                 data.fading = false
             else
                 if lastGunState[player] then
-                    print(player.Name .. " dropped or lost their gun")
+                    if now - (lastPrintTime[player] or 0) >= delayprint then
+                        print(player.Name .. " dropped or lost their gun")
+                        lastPrintTime[player] = now
+                    end
                     lastGunState[player] = false
                     data.lastGun = nil
                 end
@@ -157,9 +166,7 @@ local success, err = pcall(function()
         end
 
         if anyHasGun then
-            if not lastGlobalState then
-                lastGlobalState = true
-            end
+            lastGlobalState = true
         else
             if lastGlobalState then
                 print("no player has a gun boohoo")
@@ -167,7 +174,7 @@ local success, err = pcall(function()
             end
         end
 
-        wait(0.01)
+        wait(0.05)
     end
 end)
 
