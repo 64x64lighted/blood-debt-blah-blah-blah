@@ -45,8 +45,6 @@ local success, err = pcall(function()
         end
     end
 
-    print("check initiate")
-
     while true do
         local anyHasGun = false
         local list = players:GetChildren()
@@ -73,16 +71,7 @@ local success, err = pcall(function()
             end
 
             if hum.Health <= 0 then
-                if not data.fading then
-                    data.fading = true
-                    spawn(function()
-                        for i = 1, 30 do
-                            data.box.Color = Color3.fromRGB(255 - (i * 8), 255 - (i * 8), 255 - (i * 8))
-                            wait(0.01)
-                        end
-                        removeboxes(player)
-                    end)
-                end
+                hideboxes(player)
                 continue
             end
 
@@ -105,13 +94,10 @@ local success, err = pcall(function()
 
             if foundGun then
                 anyHasGun = true
+                local lastGun = data.lastGun
+                local hadGun = lastGunState[player]
 
-                if (not lastGunState[player] or data.lastGun ~= currentGun) and (now - (lastPrintTime[player] or 0) >= delayprint) then
-                    if not lastGunState[player] then
-                        print(player.Name .. " got a gun: " .. currentGun)
-                    else
-                        print(player.Name .. " switched guns to: " .. currentGun)
-                    end
+                if (not hadGun or currentGun ~= lastGun) and (now - (lastPrintTime[player] or 0) >= delayprint) then
                     lastGunState[player] = true
                     data.lastGun = currentGun
                     lastPrintTime[player] = now
@@ -133,23 +119,19 @@ local success, err = pcall(function()
                 local x = tpos.X - width / 2
                 local y = tpos.Y
 
-                data.box.Color = Color3.fromRGB(255, 0, 0)
-                data.box.Size = Vector2.new(width, height)
-                data.box.Position = Vector2.new(x, y)
+                data.box.Color = Color3.fromRGB(255,0,0)
+                data.box.Size = Vector2.new(width,height)
+                data.box.Position = Vector2.new(x,y)
                 data.box.Visible = true
 
                 data.text.Text = player.Name .. " | " .. currentGun
-                data.text.Position = Vector2.new(tpos.X, bpos.Y + 15)
+                data.text.Position = Vector2.new(tpos.X,bpos.Y + 15)
                 data.text.Visible = true
-                data.fading = false
             else
-                if lastGunState[player] then
-                    if now - (lastPrintTime[player] or 0) >= delayprint then
-                        print(player.Name .. " dropped or lost their gun")
-                        lastPrintTime[player] = now
-                    end
+                if lastGunState[player] and (now - (lastPrintTime[player] or 0) >= delayprint) then
                     lastGunState[player] = false
                     data.lastGun = nil
+                    lastPrintTime[player] = now
                 end
                 hideboxes(player)
             end
@@ -168,10 +150,7 @@ local success, err = pcall(function()
         if anyHasGun then
             lastGlobalState = true
         else
-            if lastGlobalState then
-                print("no player has a gun boohoo")
-                lastGlobalState = false
-            end
+            lastGlobalState = false
         end
 
         wait(0.05)
