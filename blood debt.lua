@@ -3,25 +3,23 @@ local success, err = pcall(function()
     local workspace = game:GetService("Workspace")
     local camera = workspace.CurrentCamera
     local localPlayer = players.LocalPlayer
-    local boxesData, lastGunState = {}, {}
-    local lastGlobalState = false
+    local boxesData = {}
 
     local function createboxes(player)
         if boxesData[player] then return end
         local box = Drawing.new("Square")
         box.Filled = false
         box.Thickness = 1
-        box.Color = Color3.fromRGB(255, 255, 255)
+        box.Color = Color3.fromRGB(255,255,255)
         box.Visible = false
 
         local text = Drawing.new("Text")
-        text.Color = Color3.fromRGB(255, 255, 255)
+        text.Color = Color3.fromRGB(255,255,255)
         text.Center = true
         text.Outline = true
         text.Visible = false
 
-        boxesData[player] = { box = box, text = text, lastGun = nil, fading = false }
-        lastGunState[player] = false
+        boxesData[player] = {box = box, text = text, lastGun = nil}
     end
 
     local function removeboxes(player)
@@ -30,7 +28,6 @@ local success, err = pcall(function()
             d.box:Remove()
             d.text:Remove()
             boxesData[player] = nil
-            lastGunState[player] = nil
         end
     end
 
@@ -42,10 +39,7 @@ local success, err = pcall(function()
         end
     end
 
-    print("check initiate")
-
     while true do
-        local anyHasGun = false
         local list = players:GetChildren()
 
         for _, player in pairs(list) do
@@ -63,57 +57,33 @@ local success, err = pcall(function()
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-            if not (char and root and hum) then
+            if not (char and root and hum) or hum.Health <= 0 then
                 hideboxes(player)
                 continue
             end
 
-            if hum.Health <= 0 then
-                if not data.fading then
-                    data.fading = true
-                    spawn(function()
-                        for i = 1, 30 do
-                            data.box.Color = Color3.fromRGB(255 - (i * 8), 255 - (i * 8), 255 - (i * 8))
-                            wait(0.01)
-                        end
-                        removeboxes(player)
-                    end)
-                end
-                continue
-            end
-
-            local foundGun, gunName = false, nil
-            for _, container in pairs({ player:FindFirstChild("Backpack"), char }) do
+            local foundGun, currentGun = false, nil
+            for _, container in pairs({player:FindFirstChild("Backpack"), char}) do
                 if container then
                     for _, tool in pairs(container:GetChildren()) do
                         if tool:IsA("Tool") then
                             local gunCheck = tool:FindFirstChild("GUNCHECK")
                             if gunCheck and gunCheck:IsA("Script") then
                                 foundGun = true
-                                gunName = tool.Name
+                                currentGun = tool.Name
                                 break
                             end
                         end
                     end
                 end
+                if foundGun then break end
             end
 
             if foundGun then
-                anyHasGun = true
+                data.lastGun = currentGun
 
-              
-                if not lastGunState[player] then
-                    print(player.Name .. " this boy got a gun xd : " .. gunName)
-                    lastGunState[player] = true
-                    data.lastGun = gunName
-                elseif data.lastGun ~= gunName then
-                    print(player.Name .. " switched guns to: " .. gunName)
-                    data.lastGun = gunName
-                end
-
-                local hrp = root
-                local top = hrp.Position + Vector3.new(0, hrp.Size.Y * 1.15, 0)
-                local bottom = hrp.Position - Vector3.new(0, hrp.Size.Y, 0)
+                local top = root.Position + Vector3.new(0, root.Size.Y * 1.15, 0)
+                local bottom = root.Position - Vector3.new(0, root.Size.Y, 0)
                 local tpos, ont = WorldToScreen(top)
                 local bpos, onb = WorldToScreen(bottom)
 
@@ -127,21 +97,16 @@ local success, err = pcall(function()
                 local x = tpos.X - width / 2
                 local y = tpos.Y
 
-                data.box.Color = Color3.fromRGB(255, 0, 0)
-                data.box.Size = Vector2.new(width, height)
-                data.box.Position = Vector2.new(x, y)
+                data.box.Color = Color3.fromRGB(255,0,0)
+                data.box.Size = Vector2.new(width,height)
+                data.box.Position = Vector2.new(x,y)
                 data.box.Visible = true
 
-                data.text.Text = player.Name .. " | " .. gunName
+                data.text.Text = player.Name .. " | " .. currentGun
                 data.text.Position = Vector2.new(tpos.X, bpos.Y + 15)
                 data.text.Visible = true
-                data.fading = false
             else
-                if lastGunState[player] then
-                    print(player.Name .. " dropped or lost their gun")
-                    lastGunState[player] = false
-                    data.lastGun = nil
-                end
+                data.lastGun = nil
                 hideboxes(player)
             end
         end
@@ -156,22 +121,6 @@ local success, err = pcall(function()
             end
         end
 
-        if anyHasGun then
-            if not lastGlobalState then
-                lastGlobalState = true
-            end
-        else
-            if lastGlobalState then
-                print("no player has a gun boohoo")
-                lastGlobalState = false
-            end
-        end
-
-        wait(0.01)
+        task.wait(0.05)
     end
 end)
-
-if not success then
-    warn("something fked up: " .. tostring(err))
-end
---help me this took so long and its ass
