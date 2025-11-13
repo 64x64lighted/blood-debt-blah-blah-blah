@@ -3,9 +3,7 @@ local success, err = pcall(function()
     local workspace = game:GetService("Workspace")
     local camera = workspace.CurrentCamera
     local localPlayer = players.LocalPlayer
-    local boxesData, lastGunState, lastPrintTime = {}, {}, {}
-    local lastGlobalState = false
-    local delayprint = 5
+    local boxesData = {}
 
     local function createboxes(player)
         if boxesData[player] then return end
@@ -21,9 +19,7 @@ local success, err = pcall(function()
         text.Outline = true
         text.Visible = false
 
-        boxesData[player] = {box = box, text = text, lastGun = nil, fading = false}
-        lastGunState[player] = false
-        lastPrintTime[player] = 0
+        boxesData[player] = {box = box, text = text, lastGun = nil}
     end
 
     local function removeboxes(player)
@@ -32,8 +28,6 @@ local success, err = pcall(function()
             d.box:Remove()
             d.text:Remove()
             boxesData[player] = nil
-            lastGunState[player] = nil
-            lastPrintTime[player] = nil
         end
     end
 
@@ -46,9 +40,7 @@ local success, err = pcall(function()
     end
 
     while true do
-        local anyHasGun = false
         local list = players:GetChildren()
-        local now = os.clock()
 
         for _, player in pairs(list) do
             if player == localPlayer then
@@ -65,12 +57,7 @@ local success, err = pcall(function()
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-            if not (char and root and hum) then
-                hideboxes(player)
-                continue
-            end
-
-            if hum.Health <= 0 then
+            if not (char and root and hum) or hum.Health <= 0 then
                 hideboxes(player)
                 continue
             end
@@ -93,19 +80,10 @@ local success, err = pcall(function()
             end
 
             if foundGun then
-                anyHasGun = true
-                local lastGun = data.lastGun
-                local hadGun = lastGunState[player]
+                data.lastGun = currentGun
 
-                if (not hadGun or currentGun ~= lastGun) and (now - (lastPrintTime[player] or 0) >= delayprint) then
-                    lastGunState[player] = true
-                    data.lastGun = currentGun
-                    lastPrintTime[player] = now
-                end
-
-                local hrp = root
-                local top = hrp.Position + Vector3.new(0, hrp.Size.Y * 1.15, 0)
-                local bottom = hrp.Position - Vector3.new(0, hrp.Size.Y, 0)
+                local top = root.Position + Vector3.new(0, root.Size.Y * 1.15, 0)
+                local bottom = root.Position - Vector3.new(0, root.Size.Y, 0)
                 local tpos, ont = WorldToScreen(top)
                 local bpos, onb = WorldToScreen(bottom)
 
@@ -125,14 +103,10 @@ local success, err = pcall(function()
                 data.box.Visible = true
 
                 data.text.Text = player.Name .. " | " .. currentGun
-                data.text.Position = Vector2.new(tpos.X,bpos.Y + 15)
+                data.text.Position = Vector2.new(tpos.X, bpos.Y + 15)
                 data.text.Visible = true
             else
-                if lastGunState[player] and (now - (lastPrintTime[player] or 0) >= delayprint) then
-                    lastGunState[player] = false
-                    data.lastGun = nil
-                    lastPrintTime[player] = now
-                end
+                data.lastGun = nil
                 hideboxes(player)
             end
         end
@@ -147,16 +121,6 @@ local success, err = pcall(function()
             end
         end
 
-        if anyHasGun then
-            lastGlobalState = true
-        else
-            lastGlobalState = false
-        end
-
-        wait(0.05)
+        task.wait(0.05)
     end
 end)
-
-if not success then
-    warn("something fked up: " .. tostring(err))
-end
