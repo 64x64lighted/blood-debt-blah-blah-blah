@@ -1,3 +1,33 @@
+local weaponMarkers = {
+    Killer = {"Sawn-off", "K1911", "RR-LightCompactPistolS", "JS2-Derringy", "SKORPION", "JS-22", "Kamatov", "Mares Leg", "ZZ-90", "Rosen-Obrez",
+    "JS1-CYCLOPS", "THUMPA", "LUT-E 'KRUS'", "Memories", "Hammer n Bullet", "JS-44", "HWISSH-KP9", "Mandols-5", "RDG-2B", "Testament", "Jolibri",
+    "JAVELIN-OBREZS", "GZhG-7.62", "AGM22", "RR-Mark2", "Dual LCPs", "Wild Mandols-5", "AK47 Case Hardened 1000000",
+    "Kensington", "ZOZ-106", "Whizz", "Rosen Nagan", "WISP", "WISP Pearl", "M-1020", "Dual SKORPS", "Micro KZI", "KamatovDRUM", "NGO", "RR-LCP", "JS1-Competitor"},
+
+    Sheriff = {"RR-Snubby", "GG-17", "IZVEKH-412", "Beagle", "ZKZ-Obrez", "J9-M", "Buxxberg-COMPACT", "JS-5A-Obrez",
+    "Dual Elites", "DRICO", "HW-M5K", "Comically Large Spoon", "GG-1720", "Dual GG-17s"},
+
+    Juggernaut = {"VK's ANKM", "RY's GG-17", "AT's KAR15", "RVK"},
+}
+
+local roleColors = {
+    Killer = Color3.fromRGB(255, 0, 0),        
+    Sheriff = Color3.fromRGB(255, 255, 0),     
+    Juggernaut = Color3.fromRGB(125, 200, 255) 
+}
+
+
+local function getGunCategory(gunName)
+    for category, list in pairs(weaponMarkers) do
+        for _, weapon in ipairs(list) do
+            if weapon == gunName then
+                return category
+            end
+        end
+    end
+    return nil
+end
+
 local success, err = pcall(function()
     local players = game:GetService("Players")
     local workspace = game:GetService("Workspace")
@@ -82,6 +112,10 @@ local success, err = pcall(function()
             if foundGun then
                 data.lastGun = currentGun
 
+            
+                local category = getGunCategory(currentGun)
+                local color = roleColors[category] or Color3.fromRGB(255,255,255)
+
                 local top = root.Position + Vector3.new(0, root.Size.Y * 1.15, 0)
                 local bottom = root.Position - Vector3.new(0, root.Size.Y, 0)
                 local tpos, ont = WorldToScreen(top)
@@ -97,12 +131,12 @@ local success, err = pcall(function()
                 local x = tpos.X - width / 2
                 local y = tpos.Y
 
-                data.box.Color = Color3.fromRGB(255,0,0)
+                data.box.Color = color
                 data.box.Size = Vector2.new(width,height)
                 data.box.Position = Vector2.new(x,y)
                 data.box.Visible = true
 
-                data.text.Text = player.Name .. " | " .. currentGun
+                data.text.Text = player.Name .. " | " .. currentGun .. (category and (" ["..category.."]") or "")
                 data.text.Position = Vector2.new(tpos.X, bpos.Y + 15)
                 data.text.Visible = true
             else
