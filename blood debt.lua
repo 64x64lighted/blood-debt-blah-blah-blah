@@ -14,7 +14,7 @@ local weaponMarkers = {
     },
 
     Juggernaut = {
-        "VK's ANKM","RY's GG-17","AT's KAR15","TG's JAVELIN-ZVD","RVK","Mason's K1911"
+        "VK's ANKM","RY's GG-17","AT's KAR15","TG's JAVELIN-ZVD", "VA's ANKM", "RVK","Mason's K1911"
     }
 }
 
